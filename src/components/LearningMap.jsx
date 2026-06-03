@@ -1,100 +1,132 @@
-import { CheckCircle2, Lock, Map, Minus, Plus, Search } from "lucide-react";
-import { motion } from "framer-motion";
+import { Box, Maximize2, Minus, Plus, Shield, Workflow } from "lucide-react";
 import { useLmsStore } from "../store/useLmsStore.js";
-import { moduleProgress } from "../lib/selectors.js";
 
-const positions = [
-  { x: 40, y: 80 },
-  { x: 286, y: 80 },
-  { x: 532, y: 80 },
-  { x: 778, y: 80 },
-  { x: 40, y: 310 },
-  { x: 286, y: 310 },
-  { x: 532, y: 310 },
-  { x: 778, y: 310 }
+const stackSections = [
+  {
+    id: "applications",
+    title: "Applications & Tools",
+    color: "#1f6feb",
+    icon: Box,
+    groups: [
+      { title: "HPC Workloads", items: ["MPI / OpenMP", "GPU Programming", "I/O Intensive"] },
+      { title: "AI / Data / ML", items: ["Distributed Training", "Inference", "Feature Engineering"] },
+      { title: "Visualization & Dev Tools", items: ["ParaView", "Jupyter", "Debuggers"] },
+      { title: "Domain Applications", items: ["CFD", "Climate", "Seismic Imaging"] }
+    ]
+  },
+  {
+    id: "middleware-resource-management",
+    title: "Middleware & Resource Management",
+    color: "#e96922",
+    icon: Workflow,
+    groups: [
+      { title: "Job Scheduling", items: ["Slurm", "PBS", "Fairshare"] },
+      { title: "Resource Management", items: ["cgroups", "Namespaces", "Node Health"] },
+      { title: "Communication Libraries", items: ["MPI", "UCX", "SHMEM"] },
+      { title: "Storage & Workflow", items: ["Lustre", "GPFS", "Flux"] }
+    ]
+  },
+  {
+    id: "system-software",
+    title: "Base System Software",
+    color: "#3f8f35",
+    icon: Box,
+    groups: [
+      { title: "Operating Systems", items: ["Linux", "Drivers", "Runtimes"] },
+      { title: "Compilers & Toolchains", items: ["GCC", "LLVM", "HIP/CUDA"] },
+      { title: "Math & HPC Libraries", items: ["BLAS", "FFT", "Solvers"] },
+      { title: "Parallel File Systems", items: ["Lustre", "BeeGFS", "GPFS"] }
+    ]
+  }
 ];
 
+const sidePillars = [
+  { title: "Monitoring", color: "#d6a52d", items: ["Metrics", "Logs", "Traces", "Alerts"] },
+  { title: "Privacy, Safety & Security", color: "#d6a52d", items: ["Access Control", "Encryption", "Isolation", "Audit"] }
+];
+
+const hardware = ["Compute Nodes", "Interconnects", "Memory Hierarchy", "Storage", "Networking"];
+
 export default function LearningMap() {
-  const { course, progress, analytics, activeLessonId, setActiveLesson, zoom, setZoom } = useLmsStore();
-  const modules = course?.modules || [];
-  const activeModuleId = modules.find((module) => module.lessons.some((lesson) => lesson.id === activeLessonId))?.id;
+  const { course, activeLayerId, activeLessonId, zoom, setZoom, selectLayer, selectLesson } = useLmsStore();
+  const activeLayer = course.modules.find((layer) => layer.id === activeLayerId);
 
   return (
-    <section className="map-panel">
-      <div className="map-toolbar">
-        <div>
-          <h2>Interactive Learning Map</h2>
-          <p>Click a module or lesson node to continue through the HPC dependency path.</p>
+    <section className="architecture-panel">
+      <div className="architecture-toolbar">
+        <div className="legend">
+          <span><i className="done" /> Selected</span>
+          <span><i className="blue" /> Applications</span>
+          <span><i className="orange" /> Middleware</span>
+          <span><i className="green" /> Base Software</span>
         </div>
-        <div className="zoom-controls" aria-label="Map zoom controls">
-          <button onClick={() => setZoom(zoom - 0.1)} aria-label="Zoom out"><Minus className="h-4 w-4" /></button>
+        <div className="zoom-controls">
+          <button onClick={() => setZoom(zoom - 0.08)} aria-label="Zoom out"><Minus className="h-4 w-4" /></button>
           <span>{Math.round(zoom * 100)}%</span>
-          <button onClick={() => setZoom(zoom + 0.1)} aria-label="Zoom in"><Plus className="h-4 w-4" /></button>
+          <button onClick={() => setZoom(zoom + 0.08)} aria-label="Zoom in"><Plus className="h-4 w-4" /></button>
+          <button onClick={() => setZoom(1)} aria-label="Fit map"><Maximize2 className="h-4 w-4" /></button>
         </div>
       </div>
 
-      <div className="map-canvas">
-        <div className="map-inner" style={{ transform: `scale(${zoom})` }}>
-          <svg className="dependency-lines" viewBox="0 0 1020 500" aria-hidden="true">
-            {modules.slice(1).map((module, index) => {
-              const from = positions[index];
-              const to = positions[index + 1];
-              return (
-                <path
-                  key={module.id}
-                  d={`M ${from.x + 170} ${from.y + 76} C ${from.x + 220} ${from.y + 76}, ${to.x - 60} ${to.y + 76}, ${to.x} ${to.y + 76}`}
-                  fill="none"
-                  stroke={module.id === activeModuleId ? "#1f6feb" : "#c9d7e8"}
-                  strokeWidth="4"
-                  strokeDasharray={module.id === activeModuleId ? "0" : "10 10"}
-                />
-              );
-            })}
-          </svg>
-
-          {modules.map((module, index) => {
-            const pos = positions[index];
-            const percent = Math.round(moduleProgress(module, progress) * 100);
-            const active = module.id === activeModuleId;
-            const complete = percent === 100;
-            const recommended = analytics?.recommendedLesson?.moduleId === module.id;
-
+      <div className="architecture-canvas">
+        <div className="architecture-inner" style={{ transform: `scale(${zoom})` }}>
+          {stackSections.map((section) => {
+            const Icon = section.icon;
+            const active = section.id === activeLayerId;
             return (
-              <motion.div
-                key={module.id}
-                className={`map-node ${active ? "active" : ""} ${complete ? "complete" : ""}`}
-                style={{ left: pos.x, top: pos.y, borderColor: module.color }}
-                whileHover={{ y: -4 }}
-                onClick={() => setActiveLesson(module.lessons[0]?.id)}
+              <section
+                key={section.id}
+                className={`stack-band ${active ? "active" : ""}`}
+                style={{ "--band-color": section.color }}
+                onClick={() => section.id !== "applications" && selectLayer(section.id)}
               >
-                <div className="node-icon" style={{ background: module.color }}>
-                  {complete ? <CheckCircle2 className="h-5 w-5" /> : recommended ? <Search className="h-5 w-5" /> : <Map className="h-5 w-5" />}
+                <h2><Icon className="h-5 w-5" /> {section.title}</h2>
+                <div className="stack-groups">
+                  {section.groups.map((group) => (
+                    <div key={group.title} className="stack-group">
+                      <strong>{group.title}</strong>
+                      <div>
+                        {group.items.map((item) => (
+                          <button key={item} onClick={(event) => event.stopPropagation()}>{item}</button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="node-body">
-                  <span>Module {module.order}</span>
-                  <strong>{module.title}</strong>
-                  <small>{module.estimatedMinutes} min · {percent}%</small>
-                </div>
-                <div className="lesson-dots">
-                  {module.lessons.map((lesson) => {
-                    const done = progress?.lessons?.[lesson.id]?.completed;
-                    return (
-                      <button
-                        key={lesson.id}
-                        className={lesson.id === activeLessonId ? "selected" : done ? "done" : ""}
-                        title={lesson.title}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setActiveLesson(lesson.id);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-                {!complete && module.dependencies?.length ? <Lock className="node-lock h-4 w-4" /> : null}
-              </motion.div>
+              </section>
             );
           })}
+
+          <section className="foundation-band">
+            <h2>Hardware Foundation</h2>
+            <div>
+              {hardware.map((item) => <span key={item}>{item}</span>)}
+            </div>
+          </section>
+
+          <div className="pillar-row">
+            {sidePillars.map((pillar) => (
+              <section key={pillar.title} className="side-pillar" style={{ "--pillar-color": pillar.color }}>
+                <h3><Shield className="h-4 w-4" /> {pillar.title}</h3>
+                {pillar.items.map((item) => <span key={item}>{item}</span>)}
+              </section>
+            ))}
+          </div>
+
+          <section className="map-topic-strip">
+            <h3>{activeLayer?.title}</h3>
+            <div>
+              {activeLayer?.lessons.map((lesson) => (
+                <button
+                  key={lesson.id}
+                  className={lesson.id === activeLessonId ? "active" : ""}
+                  onClick={() => selectLesson(lesson.id)}
+                >
+                  {lesson.title}
+                </button>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
     </section>

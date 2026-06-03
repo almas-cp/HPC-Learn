@@ -1,348 +1,76 @@
 import { create } from "zustand";
-import { courses, getCourseById } from "../content/hpcCourse.js";
+import { courses } from "../content/hpcCourse.js";
 
-const learnerKey = "hpc-learning-studio-learner-id";
-const storageKey = "hpc-learning-studio-progress-v2";
-const dbKey = "hpc-learning-studio-local-db-v1";
+const course = courses[0];
+const firstLessonId = course.modules[0]?.lessons[0]?.id || null;
 
 export const useLmsStore = create((set, get) => ({
-  learner: null,
-  courses,
-  course: courses[0],
-  progress: emptyProgress(),
-  analytics: calculateAnalytics(courses[0], emptyProgress()),
-  activeLessonId: null,
-  activeTab: "study",
+  course,
+  activeLayerId: course.modules[0]?.id || null,
+  activeLessonId: firstLessonId,
   search: "",
-  zoom: 0.82,
-  loading: true,
-  error: "",
+  zoom: 1,
 
-  loadBootstrap: (courseId, routeLessonId) => {
-    try {
-      const learner = ensureLearner();
-      const course = getCourseById(courseId);
-      const progress = readProgress();
-      const analytics = calculateAnalytics(course, progress);
-      const lessonId = routeLessonId || analytics.recommendedLesson?.id || firstLessonId(course);
-
-      set({
-        learner,
-        courses,
-        course,
-        progress,
-        analytics,
-        activeLessonId: lessonId,
-        loading: false,
-        error: ""
-      });
-
-      if (lessonId) get().visitLesson(lessonId, 0);
-    } catch (error) {
-      set({ error: error.message, loading: false });
-    }
-  },
-
-  setActiveLesson: (lessonId) => {
-    set({ activeLessonId: lessonId });
-    get().visitLesson(lessonId, 0);
-  },
-
-  setActiveTab: (activeTab) => set({ activeTab }),
   setSearch: (search) => set({ search }),
-  setZoom: (zoom) => set({ zoom: Math.max(0.66, Math.min(1.35, zoom)) }),
-  createNewLearner: () => {
-    const course = get().course || courses[0];
-    const db = readDb();
-    const learner = createLearnerRecord();
-    db.activeLearnerId = learner.id;
-    db.learners[learner.id] = learner;
-    writeDb(db);
-    localStorage.setItem(learnerKey, learner.id);
+  setZoom: (zoom) => set({ zoom: Math.max(0.82, Math.min(1.18, zoom)) }),
 
-    const progress = cloneProgress(learner.progress);
+  selectLayer: (layerId) => {
+    const layer = course.modules.find((module) => module.id === layerId);
     set({
-      learner: { id: learner.id },
-      progress,
-      analytics: calculateAnalytics(course, progress),
-      activeLessonId: firstLessonId(course),
-      activeTab: "study",
-      search: ""
+      activeLayerId: layerId,
+      activeLessonId: layer?.lessons[0]?.id || get().activeLessonId
     });
   },
 
-  visitLesson: (lessonId, seconds = 0) => {
-    const course = get().course;
-    if (!lessonId || !course) return;
-
-    const progress = cloneProgress(get().progress);
-    const current = progress.lessons[lessonId] || {};
-    progress.lessons[lessonId] = {
-      completed: Boolean(current.completed),
-      completedAt: current.completedAt || null,
-      timeSpentSeconds: (current.timeSpentSeconds || 0) + seconds,
-      lastVisitedAt: new Date().toISOString()
-    };
-    persistAndSet(set, course, progress);
-  },
-
-  completeLesson: (lessonId, seconds = 0) => {
-    const course = get().course;
-    const progress = cloneProgress(get().progress);
-    const current = progress.lessons[lessonId] || {};
-    progress.lessons[lessonId] = {
-      completed: true,
-      completedAt: current.completedAt || new Date().toISOString(),
-      timeSpentSeconds: (current.timeSpentSeconds || 0) + seconds,
-      lastVisitedAt: new Date().toISOString()
-    };
-    persistAndSet(set, course, progress);
-  },
-
-  submitQuiz: (lessonId, answers, score, total) => {
-    const course = get().course;
-    const lesson = findLesson(course, lessonId);
-    const progress = cloneProgress(get().progress);
-    progress.quizAttempts.unshift({
-      id: createId(),
-      lessonId,
-      moduleId: lesson?.moduleId,
-      score,
-      total,
-      accuracy: total ? score / total : 0,
-      answers,
-      createdAt: new Date().toISOString()
+  selectLesson: (lessonId) => {
+    const lesson = findLesson(lessonId);
+    if (!lesson) return;
+    set({
+      activeLayerId: lesson.moduleId,
+      activeLessonId: lesson.id
     });
-    persistAndSet(set, course, progress);
   },
 
-  reviewFlashcard: (lessonId, flashcardId, rating) => {
-    const course = get().course;
-    const progress = cloneProgress(get().progress);
-    const current = progress.flashcardReviews[flashcardId] || {};
-    progress.flashcardReviews[flashcardId] = {
-      lessonId,
-      rating,
-      reviewCount: (current.reviewCount || 0) + 1,
-      lastReviewedAt: new Date().toISOString()
-    };
-    persistAndSet(set, course, progress);
+  nextLesson: () => {
+    const lessons = flattenLessons();
+    const index = lessons.findIndex((lesson) => lesson.id === get().activeLessonId);
+    const next = lessons[Math.min(lessons.length - 1, index + 1)];
+    if (next) get().selectLesson(next.id);
   },
 
-  saveNotes: (lessonId, notes) => {
-    const course = get().course;
-    const progress = cloneProgress(get().progress);
-    progress.notes[lessonId] = {
-      notes,
-      updatedAt: new Date().toISOString()
-    };
-    persistAndSet(set, course, progress);
+  previousLesson: () => {
+    const lessons = flattenLessons();
+    const index = lessons.findIndex((lesson) => lesson.id === get().activeLessonId);
+    const previous = lessons[Math.max(0, index - 1)];
+    if (previous) get().selectLesson(previous.id);
   }
 }));
 
-function ensureLearner() {
-  const db = readDb();
-  let id = db.activeLearnerId || localStorage.getItem(learnerKey);
-
-  if (!id || !db.learners[id]) {
-    const learner = createLearnerRecord(readLegacyProgress());
-    id = learner.id;
-    db.activeLearnerId = id;
-    db.learners[id] = learner;
-    writeDb(db);
-  }
-
-  localStorage.setItem(learnerKey, id);
-  return { id };
-}
-
-function createLearnerRecord(progress = emptyProgress()) {
-  const now = new Date().toISOString();
-  return {
-    id: createId(),
-    createdAt: now,
-    updatedAt: now,
-    progress: cloneProgress(progress)
-  };
-}
-
-function createId() {
-  if (globalThis.crypto?.randomUUID) {
-    return globalThis.crypto.randomUUID();
-  }
-
-  const bytes = new Uint8Array(16);
-  if (globalThis.crypto?.getRandomValues) {
-    globalThis.crypto.getRandomValues(bytes);
-  } else {
-    for (let index = 0; index < bytes.length; index += 1) {
-      bytes[index] = Math.floor(Math.random() * 256);
-    }
-  }
-
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-
-  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0"));
-  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10, 16).join("")}`;
-}
-
-function emptyProgress() {
-  return {
-    lessons: {},
-    quizAttempts: [],
-    flashcardReviews: {},
-    notes: {}
-  };
-}
-
-function readLegacyProgress() {
-  try {
-    return { ...emptyProgress(), ...JSON.parse(localStorage.getItem(storageKey) || "{}") };
-  } catch {
-    return emptyProgress();
-  }
-}
-
-function readProgress() {
-  const learner = ensureLearner();
-  const db = readDb();
-  return cloneProgress(db.learners[learner.id]?.progress || emptyProgress());
-}
-
-function readDb() {
-  try {
-    const db = JSON.parse(localStorage.getItem(dbKey) || "{}");
-    return {
-      version: 1,
-      activeLearnerId: db.activeLearnerId || null,
-      learners: db.learners || {}
-    };
-  } catch {
-    return { version: 1, activeLearnerId: null, learners: {} };
-  }
-}
-
-function writeDb(db) {
-  localStorage.setItem(dbKey, JSON.stringify({
-    version: 1,
-    activeLearnerId: db.activeLearnerId,
-    learners: db.learners
-  }));
-}
-
-function writeProgress(progress) {
-  const learner = ensureLearner();
-  const db = readDb();
-  const current = db.learners[learner.id] || createLearnerRecord();
-  db.activeLearnerId = learner.id;
-  db.learners[learner.id] = {
-    ...current,
-    id: learner.id,
-    updatedAt: new Date().toISOString(),
-    progress: cloneProgress(progress)
-  };
-  writeDb(db);
-}
-
-function cloneProgress(progress) {
-  return {
-    lessons: { ...(progress?.lessons || {}) },
-    quizAttempts: [...(progress?.quizAttempts || [])],
-    flashcardReviews: { ...(progress?.flashcardReviews || {}) },
-    notes: { ...(progress?.notes || {}) }
-  };
-}
-
-function persistAndSet(set, course, progress) {
-  writeProgress(progress);
-  set({
-    progress,
-    analytics: calculateAnalytics(course, progress)
-  });
-}
-
-function firstLessonId(course) {
-  return course?.modules?.[0]?.lessons?.[0]?.id || null;
-}
-
-function flattenLessons(course) {
-  return course?.modules?.flatMap((module) => module.lessons) || [];
-}
-
-function findLesson(course, lessonId) {
-  return flattenLessons(course).find((lesson) => lesson.id === lessonId);
-}
-
-function calculateAnalytics(course, progress) {
-  const lessons = flattenLessons(course);
-  const completedIds = new Set(
-    Object.entries(progress.lessons || {})
-      .filter(([, value]) => value.completed)
-      .map(([lessonId]) => lessonId)
+export function flattenLessons() {
+  return course.modules.flatMap((module) =>
+    module.lessons.map((lesson) => ({
+      ...lesson,
+      moduleId: module.id,
+      moduleTitle: module.title,
+      moduleOrder: module.order,
+      moduleColor: module.color
+    }))
   );
-  const totalLessons = lessons.length || 1;
-  const completedLessons = completedIds.size;
-  const timeSpentSeconds = Object.values(progress.lessons || {})
-    .reduce((sum, row) => sum + (row.timeSpentSeconds || 0), 0);
+}
 
-  const latestByLesson = new Map();
-  for (const attempt of [...(progress.quizAttempts || [])].reverse()) {
-    latestByLesson.set(attempt.lessonId, attempt);
-  }
-  const attempts = [...latestByLesson.values()];
-  const quizScore = attempts.reduce((sum, attempt) => sum + attempt.score, 0);
-  const quizTotal = attempts.reduce((sum, attempt) => sum + attempt.total, 0);
-  const quizAccuracy = quizTotal ? quizScore / quizTotal : 0;
+export function findLesson(lessonId) {
+  return flattenLessons().find((lesson) => lesson.id === lessonId) || flattenLessons()[0];
+}
 
-  const moduleCompletion = (course?.modules || []).map((module) => {
-    const moduleAttempts = attempts.filter((attempt) => attempt.moduleId === module.id);
-    const moduleScore = moduleAttempts.reduce((sum, attempt) => sum + attempt.score, 0);
-    const moduleTotal = moduleAttempts.reduce((sum, attempt) => sum + attempt.total, 0);
-    const completed = module.lessons.filter((lesson) => completedIds.has(lesson.id)).length;
-    const completion = module.lessons.length ? completed / module.lessons.length : 0;
-    const accuracy = moduleTotal ? moduleScore / moduleTotal : 0;
+export function findLayer(layerId) {
+  return course.modules.find((module) => module.id === layerId) || course.modules[0];
+}
 
-    return {
-      id: module.id,
-      title: module.title,
-      completion,
-      accuracy,
-      mastery: Math.round((completion * 0.55 + accuracy * 0.45) * 100)
-    };
-  });
-
-  const lastVisited = Object.entries(progress.lessons || {})
-    .sort((a, b) => new Date(b[1].lastVisitedAt) - new Date(a[1].lastVisitedAt))[0]?.[0];
-  const lastIndex = lessons.findIndex((lesson) => lesson.id === lastVisited);
-  const recommendedLesson =
-    lessons.find((lesson, index) => index > lastIndex && !completedIds.has(lesson.id)) ||
-    lessons.find((lesson) => !completedIds.has(lesson.id)) ||
-    lessons[0];
-
-  const weakAreas = moduleCompletion
-    .filter((module) => module.mastery < 72)
-    .sort((a, b) => a.mastery - b.mastery)
-    .slice(0, 3)
-    .map((module) => module.title);
-
-  const flashcardFactor = Math.min(
-    Object.keys(progress.flashcardReviews || {}).length / Math.max(totalLessons * 2, 1),
-    1
-  );
-  const masteryScore = Math.round(
-    ((completedLessons / totalLessons) * 0.5 + quizAccuracy * 0.4 + flashcardFactor * 0.1) * 100
-  );
-
+export function getAdjacentLessons(lessonId) {
+  const lessons = flattenLessons();
+  const index = lessons.findIndex((lesson) => lesson.id === lessonId);
   return {
-    courseCompletion: Math.round((completedLessons / totalLessons) * 100),
-    completedLessons,
-    totalLessons,
-    moduleCompletion,
-    quizAccuracy: Math.round(quizAccuracy * 100),
-    timeSpentSeconds,
-    masteryScore,
-    weakAreas,
-    recommendedLesson
+    previous: index > 0 ? lessons[index - 1] : null,
+    next: index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : null
   };
 }
