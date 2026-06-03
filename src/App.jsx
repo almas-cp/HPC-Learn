@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
 import { BookOpen, Loader2 } from "lucide-react";
 import { useLmsStore } from "./store/useLmsStore.js";
 import { findLesson } from "./lib/selectors.js";
@@ -82,19 +81,10 @@ export default function App() {
             <small>course completion</small>
           </div>
         </header>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeLesson?.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.22 }}
-            className="stage-scroll"
-          >
-            <LearningMap />
-            <LessonWorkspace lesson={activeLesson} progress={progress} />
-          </motion.div>
-        </AnimatePresence>
+        <div className="stage-scroll">
+          <LearningMap />
+          <LessonWorkspace lesson={activeLesson} progress={progress} />
+        </div>
       </main>
       <RightSidebar lesson={activeLesson} progress={progress} analytics={analytics} />
     </div>

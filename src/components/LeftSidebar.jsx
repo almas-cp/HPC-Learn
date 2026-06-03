@@ -3,7 +3,7 @@ import { useLmsStore } from "../store/useLmsStore.js";
 import { flattenLessons, moduleProgress } from "../lib/selectors.js";
 
 export default function LeftSidebar({ onSelectLesson }) {
-  const { course, progress, analytics, activeLessonId, search, setSearch } = useLmsStore();
+  const { course, progress, analytics, activeLessonId, search, setSearch, createNewLearner } = useLmsStore();
   const lessons = flattenLessons(course);
   const visibleModules = course?.modules?.map((module) => ({
     ...module,
@@ -76,10 +76,7 @@ export default function LeftSidebar({ onSelectLesson }) {
 
       <button
         className="reset-button"
-        onClick={() => {
-          localStorage.removeItem("hpc-learning-studio-learner-id");
-          window.location.assign("/");
-        }}
+        onClick={createNewLearner}
       >
         <RotateCcw className="h-4 w-4" />
         New Learner

@@ -3,6 +3,7 @@ import { courses, getCourseById } from "../content/hpcCourse.js";
 
 const learnerKey = "hpc-learning-studio-learner-id";
 const storageKey = "hpc-learning-studio-progress-v2";
+const dbKey = "hpc-learning-studio-local-db-v1";
 
 export const useLmsStore = create((set, get) => ({
   learner: null,
@@ -50,6 +51,25 @@ export const useLmsStore = create((set, get) => ({
   setActiveTab: (activeTab) => set({ activeTab }),
   setSearch: (search) => set({ search }),
   setZoom: (zoom) => set({ zoom: Math.max(0.66, Math.min(1.35, zoom)) }),
+  createNewLearner: () => {
+    const course = get().course || courses[0];
+    const db = readDb();
+    const learner = createLearnerRecord();
+    db.activeLearnerId = learner.id;
+    db.learners[learner.id] = learner;
+    writeDb(db);
+    localStorage.setItem(learnerKey, learner.id);
+
+    const progress = cloneProgress(learner.progress);
+    set({
+      learner: { id: learner.id },
+      progress,
+      analytics: calculateAnalytics(course, progress),
+      activeLessonId: firstLessonId(course),
+      activeTab: "study",
+      search: ""
+    });
+  },
 
   visitLesson: (lessonId, seconds = 0) => {
     const course = get().course;
@@ -121,12 +141,29 @@ export const useLmsStore = create((set, get) => ({
 }));
 
 function ensureLearner() {
-  let id = localStorage.getItem(learnerKey);
-  if (!id) {
-    id = createId();
-    localStorage.setItem(learnerKey, id);
+  const db = readDb();
+  let id = db.activeLearnerId || localStorage.getItem(learnerKey);
+
+  if (!id || !db.learners[id]) {
+    const learner = createLearnerRecord(readLegacyProgress());
+    id = learner.id;
+    db.activeLearnerId = id;
+    db.learners[id] = learner;
+    writeDb(db);
   }
+
+  localStorage.setItem(learnerKey, id);
   return { id };
+}
+
+function createLearnerRecord(progress = emptyProgress()) {
+  const now = new Date().toISOString();
+  return {
+    id: createId(),
+    createdAt: now,
+    updatedAt: now,
+    progress: cloneProgress(progress)
+  };
 }
 
 function createId() {
@@ -159,7 +196,7 @@ function emptyProgress() {
   };
 }
 
-function readProgress() {
+function readLegacyProgress() {
   try {
     return { ...emptyProgress(), ...JSON.parse(localStorage.getItem(storageKey) || "{}") };
   } catch {
@@ -167,8 +204,45 @@ function readProgress() {
   }
 }
 
+function readProgress() {
+  const learner = ensureLearner();
+  const db = readDb();
+  return cloneProgress(db.learners[learner.id]?.progress || emptyProgress());
+}
+
+function readDb() {
+  try {
+    const db = JSON.parse(localStorage.getItem(dbKey) || "{}");
+    return {
+      version: 1,
+      activeLearnerId: db.activeLearnerId || null,
+      learners: db.learners || {}
+    };
+  } catch {
+    return { version: 1, activeLearnerId: null, learners: {} };
+  }
+}
+
+function writeDb(db) {
+  localStorage.setItem(dbKey, JSON.stringify({
+    version: 1,
+    activeLearnerId: db.activeLearnerId,
+    learners: db.learners
+  }));
+}
+
 function writeProgress(progress) {
-  localStorage.setItem(storageKey, JSON.stringify(progress));
+  const learner = ensureLearner();
+  const db = readDb();
+  const current = db.learners[learner.id] || createLearnerRecord();
+  db.activeLearnerId = learner.id;
+  db.learners[learner.id] = {
+    ...current,
+    id: learner.id,
+    updatedAt: new Date().toISOString(),
+    progress: cloneProgress(progress)
+  };
+  writeDb(db);
 }
 
 function cloneProgress(progress) {

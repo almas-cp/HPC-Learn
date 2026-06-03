@@ -8,7 +8,7 @@ Learner data is saved in the browser with `localStorage`, so the built app can b
 
 - React + Vite + Tailwind CSS app shell inspired by the provided three-pane learning path UI.
 - Hash-based React Router URLs that work from `file://`, subfolders, GitHub Pages, Netlify, Vercel static output, or any simple file server.
-- Zustand local learner state with versioned `localStorage` persistence.
+- Zustand local learner state with a versioned JSON database in `localStorage`.
 - Framer Motion roadmap and flashcard animations.
 - Recharts mastery analytics.
 - Generated learner ID, completed lessons, quiz attempts, flashcard reviews, notes, time spent, and mastery score all stored locally.
@@ -84,3 +84,31 @@ For GitHub Pages, publish the `dist/` folder from a workflow or Pages integratio
 ## Data Portability
 
 Progress is intentionally device/browser-local. To reset a learner, use the in-app **New Learner** button or clear the browser's localStorage for the site.
+
+The app stores data under:
+
+```text
+hpc-learning-studio-local-db-v1
+```
+
+The value is plain JSON:
+
+```json
+{
+  "version": 1,
+  "activeLearnerId": "learner-id",
+  "learners": {
+    "learner-id": {
+      "id": "learner-id",
+      "createdAt": "ISO timestamp",
+      "updatedAt": "ISO timestamp",
+      "progress": {
+        "lessons": {},
+        "quizAttempts": [],
+        "flashcardReviews": {},
+        "notes": {}
+      }
+    }
+  }
+}
+```
