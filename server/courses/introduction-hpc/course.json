@@ -1,0 +1,25 @@
+{
+  "id": "intro-hpc",
+  "slug": "introduction-to-high-performance-computing",
+  "title": "Introduction to High Performance Computing",
+  "description": "A practical course on HPC systems, cluster architecture, middleware, parallel programming, AI workloads, observability, security, and optimization.",
+  "level": "Beginner to Intermediate",
+  "accent": "#1f6feb",
+  "prerequisites": ["Basic Linux command line", "Introductory programming knowledge", "Comfort reading architecture diagrams"],
+  "outcomes": [
+    "Explain how HPC clusters are organized from hardware through applications.",
+    "Select the right parallel programming and scheduling model for common workloads.",
+    "Interpret performance, monitoring, and security signals in a production cluster.",
+    "Build a mental model for running AI and scientific applications at scale."
+  ],
+  "moduleFiles": [
+    "module-1.md",
+    "module-2.md",
+    "module-3.md",
+    "module-4.md",
+    "module-5.md",
+    "module-6.md",
+    "module-7.md",
+    "module-8.md"
+  ]
+}
