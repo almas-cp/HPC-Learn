@@ -43,7 +43,7 @@ export default function RightSidebar({ lesson, progress, analytics }) {
 
         <div className="side-card compact">
           <div className="card-heading"><BookOpen className="h-4 w-4 text-green" /> Saved Progress</div>
-          <p>Progress, quiz attempts, notes, flashcard reviews, and time spent are written to the server for this learner ID.</p>
+          <p>Progress, quiz attempts, notes, flashcard reviews, and time spent are saved locally for this learner ID.</p>
         </div>
       </div>
     </aside>
