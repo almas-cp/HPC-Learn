@@ -2,8 +2,9 @@ node_modules
 dist
 server/data/*.sqlite
 server/data/*.sqlite-journal
+server/data/*.sqlite-shm
+server/data/*.sqlite-wal
 .env
 .DS_Store
 *.log
 .qa
-server/data/lms.sqlite-shm

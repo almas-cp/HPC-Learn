@@ -20,8 +20,7 @@ npm install
 npm run dev
 ```
 
-Frontend: `http://localhost:5173`
-API: `http://localhost:4000`
+App and API: `http://localhost:5000`
 
 The first visit creates a learner ID in localStorage and the backend upserts a matching learner record. Progress survives refreshes and follows the same learner ID.
 

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
 import path from "node:path";
 import express from "express";
 import cors from "cors";
@@ -17,12 +18,12 @@ import {
 } from "./services/progressService.js";
 
 const app = express();
-const port = Number(process.env.PORT || 4000);
+const port = Number(process.env.PORT || 5000);
 const isProduction = process.env.NODE_ENV === "production";
 const seededCount = seedCourses();
 
 app.use(cors({
-  origin: isProduction ? false : ["http://localhost:5173", "http://127.0.0.1:5173"],
+  origin: isProduction ? false : [`http://localhost:${port}`, `http://127.0.0.1:${port}`],
   credentials: true
 }));
 app.use(express.json({ limit: "1mb" }));
@@ -118,8 +119,27 @@ if (isProduction) {
   app.get("*", (_req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
+} else {
+  const vite = await import("vite").then(({ createServer }) =>
+    createServer({
+      server: { middlewareMode: true },
+      appType: "custom"
+    })
+  );
+
+  app.use(vite.middlewares);
+  app.use("*", async (req, res, next) => {
+    try {
+      const template = fs.readFileSync(path.resolve("index.html"), "utf8");
+      const html = await vite.transformIndexHtml(req.originalUrl, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(html);
+    } catch (error) {
+      vite.ssrFixStacktrace(error);
+      next(error);
+    }
+  });
 }
 
 app.listen(port, () => {
-  console.log(`HPC Learning Studio API listening on http://localhost:${port}`);
+  console.log(`HPC Learning Studio listening on http://localhost:${port}`);
 });
