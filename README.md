@@ -1,17 +1,19 @@
 # HPC Learning Studio
 
-A complete miniature LMS for the sample course **Introduction to High Performance Computing**. The app is a static Vite build hosted by a single Express process, and learner progress is saved locally in the browser.
+A complete portable LMS for **Introduction to High Performance Computing**. It is a static React/Vite application: no API server, no database, no registration, and no runtime backend.
+
+Learner data is saved in the browser with `localStorage`, so the built app can be copied to a USB drive, opened from `dist/index.html`, or hosted on any static web host.
 
 ## Features
 
 - React + Vite + Tailwind CSS app shell inspired by the provided three-pane learning path UI.
-- React Router course and lesson URLs.
-- Zustand learner state and API synchronization.
+- Hash-based React Router URLs that work from `file://`, subfolders, GitHub Pages, Netlify, Vercel static output, or any simple file server.
+- Zustand local learner state with versioned `localStorage` persistence.
 - Framer Motion roadmap and flashcard animations.
 - Recharts mastery analytics.
-- Generated learner IDs and progress continuity through `localStorage`.
-- No registration, no network API layer, and no database required.
-- File-backed content engine: add a course folder under `server/courses/` without changing code.
+- Generated learner ID, completed lessons, quiz attempts, flashcard reviews, notes, time spent, and mastery score all stored locally.
+- No network API layer and no database required.
+- Course content bundled from JSON/Markdown files under `src/content/courses/`.
 
 ## Local Development
 
@@ -20,26 +22,46 @@ npm install
 npm run dev
 ```
 
-App and API: `http://localhost:5000`
+Open:
 
-The first visit creates a learner ID in localStorage. Progress, quiz attempts, notes, flashcard reviews, time spent, and mastery analytics survive refreshes on the same browser/device.
+```text
+http://localhost:5000
+```
 
-## Production
+## Portable Build
 
 ```bash
 npm install
 npm run build
-npm start
 ```
 
-The Express server serves `dist/` from the same process.
+The portable app is generated as a single file in two places:
+
+```text
+dist/index.html
+portable/hpc-learning-studio.html
+```
+
+You can open either file directly in a browser, copy it to a USB drive, send it as a file, or upload it to any static host. Routes use `#/course/...`, so no server-side route fallback is needed.
+
+## Preview Build
+
+```bash
+npm run preview
+```
+
+Open:
+
+```text
+http://localhost:5000
+```
 
 ## Content Format
 
-Create a new course folder:
+Create a new course folder under:
 
 ```text
-server/courses/new-course/
+src/content/courses/new-course/
   course.json
   module-1.md
   module-2.md
@@ -47,14 +69,18 @@ server/courses/new-course/
   flashcards.json
 ```
 
-`course.json` contains metadata and a `moduleFiles` array. Each `module-*.md` file starts with JSON frontmatter between `---` markers. Lessons support text, diagrams, code blocks, examples, video URLs, quizzes, flashcards, objectives, and summaries.
+Then import it from `src/content/hpcCourse.js` or create a new content index file. Each `module-*.md` file starts with JSON frontmatter between `---` markers. Lessons support text, diagrams, code blocks, examples, video URLs, quizzes, flashcards, objectives, and summaries.
 
-## GitHub-Deployable Options
+## Static Hosting
 
-This repository can be pushed directly to GitHub.
+This repository can be pushed directly to GitHub and built by any static host:
 
-- Render: use `render.yaml`; Render runs `npm install && npm run build`, then `npm start`.
-- Docker hosts: build from the included `Dockerfile`.
-- Static frontend only: `npm run build` produces `dist/`; progress is browser-local, so no API or database service is needed.
+- Build command: `npm run build`
+- Publish directory: `dist`
+- Runtime server: none
 
-For multi-device learner sync, add a backend later. This build intentionally keeps learner data local to the user's browser.
+For GitHub Pages, publish the `dist/` folder from a workflow or Pages integration. Because the Vite base path is relative and routing uses hashes, the app works from repository subpaths.
+
+## Data Portability
+
+Progress is intentionally device/browser-local. To reset a learner, use the in-app **New Learner** button or clear the browser's localStorage for the site.

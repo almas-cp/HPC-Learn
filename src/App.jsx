@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { BookOpen, Loader2 } from "lucide-react";
 import { useLmsStore } from "./store/useLmsStore.js";
@@ -12,6 +12,7 @@ import RightSidebar from "./components/RightSidebar.jsx";
 export default function App() {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     course,
     progress,
@@ -37,8 +38,8 @@ export default function App() {
   useEffect(() => {
     if (!course || !activeLessonId) return;
     const target = `/course/${course.id}/lesson/${activeLessonId}`;
-    if (window.location.pathname !== target) navigate(target, { replace: true });
-  }, [course, activeLessonId, navigate]);
+    if (location.pathname !== target) navigate(target, { replace: true });
+  }, [course, activeLessonId, location.pathname, navigate]);
 
   const activeLesson = findLesson(course, activeLessonId);
 

@@ -1,12 +1,12 @@
-import courseMeta from "../../server/courses/introduction-hpc/course.json";
-import module1 from "../../server/courses/introduction-hpc/module-1.md?raw";
-import module2 from "../../server/courses/introduction-hpc/module-2.md?raw";
-import module3 from "../../server/courses/introduction-hpc/module-3.md?raw";
-import module4 from "../../server/courses/introduction-hpc/module-4.md?raw";
-import module5 from "../../server/courses/introduction-hpc/module-5.md?raw";
-import module6 from "../../server/courses/introduction-hpc/module-6.md?raw";
-import module7 from "../../server/courses/introduction-hpc/module-7.md?raw";
-import module8 from "../../server/courses/introduction-hpc/module-8.md?raw";
+import courseMeta from "./courses/introduction-hpc/course.json";
+import module1 from "./courses/introduction-hpc/module-1.md?raw";
+import module2 from "./courses/introduction-hpc/module-2.md?raw";
+import module3 from "./courses/introduction-hpc/module-3.md?raw";
+import module4 from "./courses/introduction-hpc/module-4.md?raw";
+import module5 from "./courses/introduction-hpc/module-5.md?raw";
+import module6 from "./courses/introduction-hpc/module-6.md?raw";
+import module7 from "./courses/introduction-hpc/module-7.md?raw";
+import module8 from "./courses/introduction-hpc/module-8.md?raw";
 
 const moduleSources = [module1, module2, module3, module4, module5, module6, module7, module8];
 
