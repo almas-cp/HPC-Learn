@@ -1,64 +1,37 @@
-import { Box, Maximize2, Minus, Plus, Shield, Workflow } from "lucide-react";
-import { useLmsStore } from "../store/useLmsStore.js";
-
-const stackSections = [
-  {
-    id: "applications",
-    title: "Applications & Tools",
-    color: "#1f6feb",
-    icon: Box,
-    groups: [
-      { title: "HPC Workloads", items: ["MPI / OpenMP", "GPU Programming", "I/O Intensive"] },
-      { title: "AI / Data / ML", items: ["Distributed Training", "Inference", "Feature Engineering"] },
-      { title: "Visualization & Dev Tools", items: ["ParaView", "Jupyter", "Debuggers"] },
-      { title: "Domain Applications", items: ["CFD", "Climate", "Seismic Imaging"] }
-    ]
-  },
-  {
-    id: "middleware-resource-management",
-    title: "Middleware & Resource Management",
-    color: "#e96922",
-    icon: Workflow,
-    groups: [
-      { title: "Job Scheduling", items: ["Slurm", "PBS", "Fairshare"] },
-      { title: "Resource Management", items: ["cgroups", "Namespaces", "Node Health"] },
-      { title: "Communication Libraries", items: ["MPI", "UCX", "SHMEM"] },
-      { title: "Storage & Workflow", items: ["Lustre", "GPFS", "Flux"] }
-    ]
-  },
-  {
-    id: "system-software",
-    title: "Base System Software",
-    color: "#3f8f35",
-    icon: Box,
-    groups: [
-      { title: "Operating Systems", items: ["Linux", "Drivers", "Runtimes"] },
-      { title: "Compilers & Toolchains", items: ["GCC", "LLVM", "HIP/CUDA"] },
-      { title: "Math & HPC Libraries", items: ["BLAS", "FFT", "Solvers"] },
-      { title: "Parallel File Systems", items: ["Lustre", "BeeGFS", "GPFS"] }
-    ]
-  }
-];
-
-const sidePillars = [
-  { title: "Monitoring", color: "#d6a52d", items: ["Metrics", "Logs", "Traces", "Alerts"] },
-  { title: "Privacy, Safety & Security", color: "#d6a52d", items: ["Access Control", "Encryption", "Isolation", "Audit"] }
-];
-
-const hardware = ["Compute Nodes", "Interconnects", "Memory Hierarchy", "Storage", "Networking"];
+import { Maximize2, Minus, Plus } from "lucide-react";
+import { useLmsStore, flattenLessons } from "../store/useLmsStore.js";
 
 export default function LearningMap() {
-  const { course, activeLayerId, activeLessonId, zoom, setZoom, selectLayer, selectLesson } = useLmsStore();
-  const activeLayer = course.modules.find((layer) => layer.id === activeLayerId);
+  const { course, activeLayerId, activeLessonId, activeBlockKey, zoom, setZoom, selectLayer, selectLesson } = useLmsStore();
+  const architecture = course.architecture;
+  const lessons = flattenLessons();
+  const activeLesson = lessons.find((lesson) => lesson.id === activeLessonId);
+  const relatedBlockKeys = new Set(activeLesson?.relatedBlocks?.map((item) => item.blockKey) || []);
+
+  function selectByLabel(label, fallbackModuleId, blockKey) {
+    const moduleId = moduleFor(fallbackModuleId);
+    const normalizedLabel = normalize(label);
+    const lesson = lessons.find((item) => normalize(item.title) === normalizedLabel)
+      || lessons.find((item) => normalize(item.title).startsWith(normalizedLabel))
+      || lessons.find((item) => normalize(item.title).includes(normalizedLabel))
+      || lessons.find((item) => item.moduleId === moduleId);
+
+    if (lesson) {
+      selectLesson(lesson.id, blockKey);
+      return;
+    }
+
+    selectLayer(moduleId, blockKey);
+  }
 
   return (
-    <section className="architecture-panel">
+    <section className="architecture-panel pinakaa-panel">
       <div className="architecture-toolbar">
         <div className="legend">
-          <span><i className="done" /> Selected</span>
-          <span><i className="blue" /> Applications</span>
+          <span><i className="blue" /> Studio tools</span>
           <span><i className="orange" /> Middleware</span>
-          <span><i className="green" /> Base Software</span>
+          <span><i className="green" /> Base software</span>
+          <span><i className="gold" /> Cross-cutting pillars</span>
         </div>
         <div className="zoom-controls">
           <button onClick={() => setZoom(zoom - 0.08)} aria-label="Zoom out"><Minus className="h-4 w-4" /></button>
@@ -68,67 +41,154 @@ export default function LearningMap() {
         </div>
       </div>
 
-      <div className="architecture-canvas">
-        <div className="architecture-inner" style={{ transform: `scale(${zoom})` }}>
-          {stackSections.map((section) => {
-            const Icon = section.icon;
-            const active = section.id === activeLayerId;
-            return (
-              <section
-                key={section.id}
-                className={`stack-band ${active ? "active" : ""}`}
-                style={{ "--band-color": section.color }}
-                onClick={() => section.id !== "applications" && selectLayer(section.id)}
-              >
-                <h2><Icon className="h-5 w-5" /> {section.title}</h2>
-                <div className="stack-groups">
-                  {section.groups.map((group) => (
-                    <div key={group.title} className="stack-group">
-                      <strong>{group.title}</strong>
-                      <div>
-                        {group.items.map((item) => (
-                          <button key={item} onClick={(event) => event.stopPropagation()}>{item}</button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-
-          <section className="foundation-band">
-            <h2>Hardware Foundation</h2>
-            <div>
-              {hardware.map((item) => <span key={item}>{item}</span>)}
-            </div>
-          </section>
-
-          <div className="pillar-row">
-            {sidePillars.map((pillar) => (
-              <section key={pillar.title} className="side-pillar" style={{ "--pillar-color": pillar.color }}>
-                <h3><Shield className="h-4 w-4" /> {pillar.title}</h3>
-                {pillar.items.map((item) => <span key={item}>{item}</span>)}
-              </section>
-            ))}
-          </div>
-
-          <section className="map-topic-strip">
-            <h3>{activeLayer?.title}</h3>
-            <div>
-              {activeLayer?.lessons.map((lesson) => (
+      <div className="architecture-canvas pinakaa-canvas">
+        <div className="architecture-inner pinakaa-inner" style={{ transform: `scale(${zoom})` }}>
+          <aside
+            className={`vertical-pillar left ${activeBlockKey === blockKey("module", architecture.pillars[0].id) ? "active" : ""} ${relatedBlockKeys.has(blockKey("module", architecture.pillars[0].id)) ? "related" : ""}`}
+          >
+            <button
+              className={`pillar-main ${activeBlockKey === blockKey("module", architecture.pillars[0].id) ? "active" : ""} ${relatedBlockKeys.has(blockKey("module", architecture.pillars[0].id)) ? "related" : ""}`}
+              onClick={() => selectLayer(architecture.pillars[0].id, blockKey("module", architecture.pillars[0].id))}
+            >
+              <strong>{architecture.pillars[0].title}</strong>
+            </button>
+            <div className="pillar-tokens">
+              {pillarItems(architecture.pillars[0]).map((item) => (
                 <button
-                  key={lesson.id}
-                  className={lesson.id === activeLessonId ? "active" : ""}
-                  onClick={() => selectLesson(lesson.id)}
+                  key={item}
+                  className={`pillar-token ${activeBlockKey === blockKey("item", item) ? "active" : ""} ${relatedBlockKeys.has(blockKey("item", item)) ? "related" : ""}`}
+                  onClick={() => selectByLabel(item, architecture.pillars[0].id, blockKey("item", item))}
                 >
-                  {lesson.title}
+                  {item}
                 </button>
               ))}
             </div>
-          </section>
+          </aside>
+
+          <main className="pinakaa-stack">
+            <button
+              className={`studio-title ${activeBlockKey === blockKey("module", "pinakaa-overview") ? "active" : ""}`}
+              onClick={() => selectLayer("pinakaa-overview", blockKey("module", "pinakaa-overview"))}
+            >
+              {architecture.title}
+            </button>
+
+            {architecture.layers.map((layer) => (
+              <section
+                key={layer.id}
+                className={`pinakaa-layer ${layer.id} ${isLayerActive(layer, activeLayerId) ? "active" : ""}`}
+                style={{ "--layer-color": layer.color }}
+              >
+                {layer.id !== "studio-tools" ? (
+                  <button
+                    className={`pinakaa-layer-title ${activeBlockKey === blockKey("module", moduleFor(layer.id)) ? "active" : ""} ${relatedBlockKeys.has(blockKey("module", moduleFor(layer.id))) ? "related" : ""}`}
+                    onClick={() => selectLayer(moduleFor(layer.id), blockKey("module", moduleFor(layer.id)))}
+                  >
+                    {layer.title}
+                  </button>
+                ) : null}
+
+                <div className="pinakaa-section-grid" data-count={layer.sections.length}>
+                  {layer.sections.map((section) => (
+                    <article key={section.id} className="pinakaa-section">
+                      <button
+                        className={`pinakaa-section-title ${activeBlockKey === blockKey("section", section.id) ? "active" : ""} ${relatedBlockKeys.has(blockKey("section", section.id)) ? "related" : ""}`}
+                        onClick={() => selectByLabel(section.title, section.id, blockKey("section", section.id))}
+                      >
+                        {section.title}
+                      </button>
+                      <div className="pinakaa-items">
+                        {section.items.map((item) => {
+                          const lesson = lessons.find((candidate) => normalize(candidate.title) === normalize(item));
+                          const key = blockKey("item", item);
+                          const selected = activeBlockKey === key || (!activeBlockKey && lesson?.id === activeLessonId);
+                          const related = relatedBlockKeys.has(key);
+                          return (
+                            <button
+                              key={item}
+                              className={`pinakaa-item ${selected ? "active" : ""} ${related ? "related" : ""}`}
+                              onClick={() => selectByLabel(item, section.id, key)}
+                              title={item}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </main>
+
+          <aside
+            className={`vertical-pillar right ${activeBlockKey === blockKey("module", architecture.pillars[1].id) ? "active" : ""} ${relatedBlockKeys.has(blockKey("module", architecture.pillars[1].id)) ? "related" : ""}`}
+          >
+            <button
+              className={`pillar-main ${activeBlockKey === blockKey("module", architecture.pillars[1].id) ? "active" : ""} ${relatedBlockKeys.has(blockKey("module", architecture.pillars[1].id)) ? "related" : ""}`}
+              onClick={() => selectLayer(architecture.pillars[1].id, blockKey("module", architecture.pillars[1].id))}
+            >
+              <strong>{architecture.pillars[1].title}</strong>
+            </button>
+            <div className="pillar-tokens">
+              {pillarItems(architecture.pillars[1]).map((item) => (
+                <button
+                  key={item}
+                  className={`pillar-token ${activeBlockKey === blockKey("item", item) ? "active" : ""} ${relatedBlockKeys.has(blockKey("item", item)) ? "related" : ""}`}
+                  onClick={() => selectByLabel(item, architecture.pillars[1].id, blockKey("item", item))}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </aside>
         </div>
       </div>
     </section>
   );
+}
+
+function normalize(value) {
+  return String(value).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function blockKey(type, value) {
+  return `${type}:${normalize(value)}`;
+}
+
+function pillarItems(pillar) {
+  if (pillar.id === "cluster-monitoring") {
+    return ["Prometheus", "Ganglia", "Suparikshan", "C-CHAKSHU"];
+  }
+
+  return ["Privacy", "Safety", "Security", "Open Source & Indigenous Frameworks"];
+}
+
+function moduleFor(id) {
+  const map = {
+    "studio-tools": "pinakaa-overview",
+    "performance-benchmarks": "performance-benchmarks",
+    applications: "applications",
+    "visualization-tools": "visualization-tools",
+    "dev-tools": "dev-tools",
+    "middleware-management": "middleware-management",
+    "communication-libraries": "communication-libraries",
+    "provisioning-resource-management": "provisioning-resource-management",
+    "ai-frameworks": "ai-frameworks",
+    "file-system": "file-system",
+    "base-system-software": "base-system-software",
+    "drivers-os": "drivers-os",
+    toolchain: "toolchain",
+    "math-libraries": "math-libraries",
+    "compilers-transpilers": "compilers-transpilers",
+    "parallel-programming-models": "parallel-programming-models"
+  };
+
+  return map[id] || id;
+}
+
+function isLayerActive(layer, activeLayerId) {
+  if (layer.id === activeLayerId) return true;
+  return layer.sections.some((section) => moduleFor(section.id) === activeLayerId);
 }

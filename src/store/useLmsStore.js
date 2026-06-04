@@ -3,31 +3,40 @@ import { courses } from "../content/hpcCourse.js";
 
 const course = courses[0];
 const firstLessonId = course.modules[0]?.lessons[0]?.id || null;
+const firstLayerId = course.modules[0]?.id || null;
 
 export const useLmsStore = create((set, get) => ({
   course,
-  activeLayerId: course.modules[0]?.id || null,
+  activeLayerId: firstLayerId,
   activeLessonId: firstLessonId,
+  activeBlockKey: firstLayerId ? `module:${firstLayerId}` : null,
   search: "",
   zoom: 1,
+  sidebarCollapsed: false,
+  readerMode: "study",
 
   setSearch: (search) => set({ search }),
   setZoom: (zoom) => set({ zoom: Math.max(0.82, Math.min(1.18, zoom)) }),
+  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  setReaderMode: (readerMode) => set({ readerMode }),
 
-  selectLayer: (layerId) => {
+  selectLayer: (layerId, blockKey) => {
     const layer = course.modules.find((module) => module.id === layerId);
+    const firstLesson = layer?.lessons[0];
     set({
       activeLayerId: layerId,
-      activeLessonId: layer?.lessons[0]?.id || get().activeLessonId
+      activeLessonId: firstLesson?.id || get().activeLessonId,
+      activeBlockKey: blockKey || firstLesson?.blockKey || `module:${layerId}`
     });
   },
 
-  selectLesson: (lessonId) => {
+  selectLesson: (lessonId, blockKey) => {
     const lesson = findLesson(lessonId);
     if (!lesson) return;
     set({
       activeLayerId: lesson.moduleId,
-      activeLessonId: lesson.id
+      activeLessonId: lesson.id,
+      activeBlockKey: blockKey || lesson.blockKey || `lesson:${lesson.id}`
     });
   },
 
