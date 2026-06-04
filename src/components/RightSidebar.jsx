@@ -13,6 +13,7 @@ import {
   Workflow
 } from "lucide-react";
 import { useLmsStore, getAdjacentLessons } from "../store/useLmsStore.js";
+import { GlossedText, titleWithExpansion } from "../lib/abbreviations.jsx";
 
 export default function RightSidebar({ lesson, layer }) {
   const { previousLesson, nextLesson, selectLesson, readerMode, setReaderMode } = useLmsStore();
@@ -39,9 +40,9 @@ export default function RightSidebar({ lesson, layer }) {
         <button onClick={previousLesson} disabled={!previous} aria-label="Previous topic">
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span>{layer?.title}</span>
+        <span><GlossedText text={layer?.title} /></span>
         <ChevronRight className="h-4 w-4" />
-        <strong>{lesson.title}</strong>
+        <strong><GlossedText text={lesson.title} /></strong>
       </div>
 
       <article className="lesson-reader">
@@ -49,7 +50,7 @@ export default function RightSidebar({ lesson, layer }) {
           <div className="reader-kicker">
             <span style={{ "--module-color": layer?.color }}>
               <Layers className="h-3.5 w-3.5" />
-              {layer?.title}
+              <GlossedText text={layer?.title} />
             </span>
             <span>
               <BookOpen className="h-3.5 w-3.5" />
@@ -60,8 +61,8 @@ export default function RightSidebar({ lesson, layer }) {
               {lessonIndex >= 0 ? `${lessonIndex + 1}/${sectionLessons.length}` : "Topic"}
             </span>
           </div>
-          <h1>{lesson.title}</h1>
-          <p>{lesson.overview}</p>
+          <h1><GlossedText text={lesson.title} /></h1>
+          <p><GlossedText text={lesson.overview} /></p>
         </header>
 
         <div className="reader-mode-tabs" aria-label="Reader mode">
@@ -88,7 +89,7 @@ export default function RightSidebar({ lesson, layer }) {
               <h2><Lightbulb className="h-4 w-4" /> Concept</h2>
               <div className="reader-copy">
                 {paragraphs.map((block) => (
-                  <p key={block.body}>{block.body}</p>
+                  <p key={block.body}><GlossedText text={block.body} /></p>
                 ))}
               </div>
             </section>
@@ -99,7 +100,7 @@ export default function RightSidebar({ lesson, layer }) {
                 {lesson.learningObjectives.map((objective, index) => (
                   <div key={objective} className="outcome-item">
                     <span>{index + 1}</span>
-                    <p>{objective}</p>
+                    <p><GlossedText text={objective} /></p>
                   </div>
                 ))}
               </div>
@@ -112,7 +113,7 @@ export default function RightSidebar({ lesson, layer }) {
                   {lesson.checks.map((check) => (
                     <div key={check}>
                       <CheckCircle2 className="h-4 w-4" />
-                      <p>{check}</p>
+                      <p><GlossedText text={check} /></p>
                     </div>
                   ))}
                 </div>
@@ -125,7 +126,7 @@ export default function RightSidebar({ lesson, layer }) {
                 <div className="path-flow">
                   {diagram.nodes.map((node, index) => (
                     <div key={`${node}-${index}`} className="path-node">
-                      <span>{node}</span>
+                      <span><GlossedText text={node} /></span>
                       {index < diagram.nodes.length - 1 ? <ArrowRight className="h-4 w-4" /> : null}
                     </div>
                   ))}
@@ -140,7 +141,7 @@ export default function RightSidebar({ lesson, layer }) {
             {example || code ? (
               <section id="example" className="reader-card example-card">
                 <h2><Code2 className="h-4 w-4" /> Applied Example</h2>
-                {example ? <p>{example.body}</p> : null}
+                {example ? <p><GlossedText text={example.body} /></p> : null}
                 {code ? (
                   <pre><code>{code.body}</code></pre>
                 ) : null}
@@ -175,7 +176,7 @@ export default function RightSidebar({ lesson, layer }) {
                 onClick={() => selectLesson(item.id)}
               >
                 <span>{item.order}</span>
-                <strong>{item.title}</strong>
+                <strong><GlossedText text={item.title} /></strong>
               </button>
             ))}
           </div>
@@ -187,13 +188,13 @@ export default function RightSidebar({ lesson, layer }) {
           <ChevronLeft className="h-4 w-4" />
           <span>
             <small>Previous</small>
-            {previous ? <strong>{previous.title}</strong> : null}
+            {previous ? <strong><GlossedText text={previous.title} /></strong> : null}
           </span>
         </button>
         <button onClick={nextLesson} disabled={!next}>
           <span>
             <small>Next</small>
-            {next ? <strong>{next.title}</strong> : null}
+            {next ? <strong><GlossedText text={next.title} /></strong> : null}
           </span>
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -208,9 +209,13 @@ function RelatedBlocks({ blocks, selectLesson }) {
       <h2><Network className="h-4 w-4" /> Related Blocks</h2>
       <div className="related-grid">
         {blocks.map((block) => (
-          <button key={`${block.relation}-${block.label}`} onClick={() => selectLesson(block.lessonId, block.blockKey)}>
-            <small>{block.relation}</small>
-            <strong>{block.label}</strong>
+          <button
+            key={`${block.relation}-${block.label}`}
+            onClick={() => selectLesson(block.lessonId, block.blockKey)}
+            title={titleWithExpansion(block.label)}
+          >
+            <small><GlossedText text={block.relation} /></small>
+            <strong><GlossedText text={block.label} /></strong>
             <ArrowRight className="h-4 w-4" />
           </button>
         ))}
@@ -228,8 +233,8 @@ function GlossaryList({ terms }) {
     <div className="glossary-list">
       {terms.map((item) => (
         <div key={`${item.term}-${item.definition}`}>
-          <dt>{item.term}</dt>
-          <dd>{item.definition}</dd>
+          <dt><GlossedText text={item.term} /></dt>
+          <dd><GlossedText text={item.definition} /></dd>
         </div>
       ))}
     </div>

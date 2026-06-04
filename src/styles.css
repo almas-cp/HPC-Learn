@@ -30,6 +30,23 @@ button {
   cursor: pointer;
 }
 
+.abbr-term {
+  cursor: help;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.pinakaa-item .abbr-term,
+.pillar-token .abbr-term,
+.topic-button .abbr-term,
+.reader-kicker .abbr-term,
+.reader-nav .abbr-term {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 1px;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.45;

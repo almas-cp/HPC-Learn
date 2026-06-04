@@ -1,5 +1,6 @@
 import { Maximize2, Minus, Plus } from "lucide-react";
 import { useLmsStore, flattenLessons } from "../store/useLmsStore.js";
+import { GlossedText, titleWithExpansion } from "../lib/abbreviations.jsx";
 
 export default function LearningMap() {
   const { course, activeLayerId, activeLessonId, activeBlockKey, zoom, setZoom, selectLayer, selectLesson } = useLmsStore();
@@ -50,7 +51,7 @@ export default function LearningMap() {
               className={`pillar-main ${activeBlockKey === blockKey("module", architecture.pillars[0].id) ? "active" : ""} ${relatedBlockKeys.has(blockKey("module", architecture.pillars[0].id)) ? "related" : ""}`}
               onClick={() => selectLayer(architecture.pillars[0].id, blockKey("module", architecture.pillars[0].id))}
             >
-              <strong>{architecture.pillars[0].title}</strong>
+              <strong><GlossedText text={architecture.pillars[0].title} /></strong>
             </button>
             <div className="pillar-tokens">
               {pillarItems(architecture.pillars[0]).map((item) => (
@@ -58,8 +59,9 @@ export default function LearningMap() {
                   key={item}
                   className={`pillar-token ${activeBlockKey === blockKey("item", item) ? "active" : ""} ${relatedBlockKeys.has(blockKey("item", item)) ? "related" : ""}`}
                   onClick={() => selectByLabel(item, architecture.pillars[0].id, blockKey("item", item))}
+                  title={titleWithExpansion(item)}
                 >
-                  {item}
+                  <GlossedText text={item} />
                 </button>
               ))}
             </div>
@@ -70,7 +72,7 @@ export default function LearningMap() {
               className={`studio-title ${activeBlockKey === blockKey("module", "pinakaa-overview") ? "active" : ""}`}
               onClick={() => selectLayer("pinakaa-overview", blockKey("module", "pinakaa-overview"))}
             >
-              {architecture.title}
+              <GlossedText text={architecture.title} />
             </button>
 
             {architecture.layers.map((layer) => (
@@ -84,7 +86,7 @@ export default function LearningMap() {
                     className={`pinakaa-layer-title ${activeBlockKey === blockKey("module", moduleFor(layer.id)) ? "active" : ""} ${relatedBlockKeys.has(blockKey("module", moduleFor(layer.id))) ? "related" : ""}`}
                     onClick={() => selectLayer(moduleFor(layer.id), blockKey("module", moduleFor(layer.id)))}
                   >
-                    {layer.title}
+                    <GlossedText text={layer.title} />
                   </button>
                 ) : null}
 
@@ -95,7 +97,7 @@ export default function LearningMap() {
                         className={`pinakaa-section-title ${activeBlockKey === blockKey("section", section.id) ? "active" : ""} ${relatedBlockKeys.has(blockKey("section", section.id)) ? "related" : ""}`}
                         onClick={() => selectByLabel(section.title, section.id, blockKey("section", section.id))}
                       >
-                        {section.title}
+                        <GlossedText text={section.title} />
                       </button>
                       <div className="pinakaa-items">
                         {section.items.map((item) => {
@@ -108,9 +110,9 @@ export default function LearningMap() {
                               key={item}
                               className={`pinakaa-item ${selected ? "active" : ""} ${related ? "related" : ""}`}
                               onClick={() => selectByLabel(item, section.id, key)}
-                              title={item}
+                              title={titleWithExpansion(item)}
                             >
-                              {item}
+                              <GlossedText text={item} />
                             </button>
                           );
                         })}
@@ -129,7 +131,7 @@ export default function LearningMap() {
               className={`pillar-main ${activeBlockKey === blockKey("module", architecture.pillars[1].id) ? "active" : ""} ${relatedBlockKeys.has(blockKey("module", architecture.pillars[1].id)) ? "related" : ""}`}
               onClick={() => selectLayer(architecture.pillars[1].id, blockKey("module", architecture.pillars[1].id))}
             >
-              <strong>{architecture.pillars[1].title}</strong>
+              <strong><GlossedText text={architecture.pillars[1].title} /></strong>
             </button>
             <div className="pillar-tokens">
               {pillarItems(architecture.pillars[1]).map((item) => (
@@ -137,8 +139,9 @@ export default function LearningMap() {
                   key={item}
                   className={`pillar-token ${activeBlockKey === blockKey("item", item) ? "active" : ""} ${relatedBlockKeys.has(blockKey("item", item)) ? "related" : ""}`}
                   onClick={() => selectByLabel(item, architecture.pillars[1].id, blockKey("item", item))}
+                  title={titleWithExpansion(item)}
                 >
-                  {item}
+                  <GlossedText text={item} />
                 </button>
               ))}
             </div>

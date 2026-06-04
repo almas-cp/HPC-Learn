@@ -1,5 +1,6 @@
 import { BookOpen, ChevronDown, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { useLmsStore } from "../store/useLmsStore.js";
+import { GlossedText, titleWithExpansion } from "../lib/abbreviations.jsx";
 
 export default function LeftSidebar() {
   const { course, activeLayerId, activeLessonId, search, sidebarCollapsed, setSearch, toggleSidebar, selectLayer, selectLesson } = useLmsStore();
@@ -16,7 +17,7 @@ export default function LeftSidebar() {
     <aside className={`layer-sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
       <div className="brand-row">
         <BookOpen className="h-6 w-6" />
-        <span>AMD PINAKAA Studio</span>
+        <span><GlossedText text="AMD PINAKAA Studio" /></span>
         <button
           className="sidebar-toggle"
           onClick={toggleSidebar}
@@ -48,9 +49,9 @@ export default function LeftSidebar() {
           const expanded = !sidebarCollapsed && (layer.id === activeLayerId || query);
           return (
             <section key={layer.id} className={`layer-section ${layer.id === activeLayerId ? "active" : ""}`}>
-              <button className="layer-button" onClick={() => selectLayer(layer.id)} title={layer.title}>
+              <button className="layer-button" onClick={() => selectLayer(layer.id)} title={titleWithExpansion(layer.title)}>
                 <span className="layer-icon" style={{ color: layer.color }}>◈</span>
-                <strong>{layer.order}. {layer.title}</strong>
+                <strong>{layer.order}. <GlossedText text={layer.title} /></strong>
                 <ChevronDown className={`h-4 w-4 ${expanded ? "open" : ""}`} />
               </button>
 
@@ -61,10 +62,11 @@ export default function LeftSidebar() {
                       key={lesson.id}
                       className={`topic-button ${lesson.id === activeLessonId ? "active" : ""} ${query ? "with-preview" : ""}`}
                       onClick={() => selectLesson(lesson.id)}
+                      title={titleWithExpansion(lesson.title)}
                     >
                       <span />
-                      <strong>{lesson.title}</strong>
-                      {query ? <small>{previewFor(lesson, query)}</small> : null}
+                      <strong><GlossedText text={lesson.title} /></strong>
+                      {query ? <small><GlossedText text={previewFor(lesson, query)} /></small> : null}
                     </button>
                   ))}
                 </div>
